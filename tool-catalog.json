@@ -1,0 +1,49 @@
+{
+  "groups": [
+    { "group": "系统", "tools": ["get_plugin_version"] },
+    { "group": "记录", "tools": ["save_note"] },
+    { "group": "检索", "tools": ["search_notes", "read_note"] },
+    { "group": "维护", "tools": ["delete_content"] }
+  ],
+  "tools": [
+    {
+      "name": "get_plugin_version",
+      "description": "返回 fsiyuanmcp MCP 插件与服务版本号",
+      "group": "系统"
+    },
+    {
+      "name": "save_note",
+      "description": "扁平保存笔记：title（可较长）+ markdown。同名则更新并保留 id；新名则创建。顶部自动维护元数据（主要内容/日期/标签/引用文档）。正文用标准 Markdown，引用写 [[文档标题]]（服务会转成思源双链）。可选 tags/refs/summary。不要分类路径。",
+      "group": "记录"
+    },
+    {
+      "name": "search_notes",
+      "description": "关键字/标签检索。返回命中文档元数据与图谱邻居（同标签、引用/被引用）。命中+邻居≤2 时直接附带全文 Markdown；更多时只给 summary/tags/refs/片段，由模型二次筛选后再 read_note。",
+      "group": "检索"
+    },
+    {
+      "name": "read_note",
+      "description": "读取一篇干净 Markdown（含元数据头与 [[标题]] 双链，无思源 YAML/IAL）。format=text 返回纯文本。",
+      "group": "检索"
+    },
+    {
+      "name": "delete_content",
+      "description": "按 query 删除相关内容。默认 scope=blocks 只删匹配段落/块；删整篇需 scope=document 且 confirm=true。可先 previewOnly=true 预览。",
+      "group": "维护"
+    }
+  ],
+  "resources": [
+    {
+      "uri": "siyuan://tags",
+      "name": "tags",
+      "description": "已有标签列表，写入时可选复用",
+      "mimeType": "application/json"
+    },
+    {
+      "uri": "siyuan://notebooks",
+      "name": "notebooks",
+      "description": "笔记本列表，并标明哪个可写",
+      "mimeType": "application/json"
+    }
+  ]
+}

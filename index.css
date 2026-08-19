@@ -1,0 +1,224 @@
+.fsiyuanmcp-topbar svg {
+  width: 16px;
+  height: 16px;
+}
+
+.fsiyuanmcp-topbar.fsiyuanmcp-topbar--error::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--b3-theme-error, #d23f31);
+  box-shadow: 0 0 0 1px var(--b3-toolbar-background, var(--b3-theme-background, #fff));
+  pointer-events: none;
+  z-index: 1;
+}
+
+.fsiyuanmcp-settings-dialog .b3-dialog__container {
+  height: 80vh !important;
+  max-height: 80vh !important;
+}
+
+.fsiyuanmcp-settings-dialog .b3-dialog__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+}
+
+.fsiyuanmcp-settings-dialog .b3-dialog__content {
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+.fsiyuanmcp-settings-dialog .b3-label {
+  flex: none !important;
+  height: auto !important;
+}
+
+.b3-dialog__content .b3-label:has(.fsiyuanmcp-panel),
+.b3-dialog__content .b3-label:has(.fsiyuanmcp-tools) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: auto;
+  flex: none;
+}
+
+.fsiyuanmcp-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  flex: none !important;
+  height: auto !important;
+  max-width: 100%;
+}
+
+.fsiyuanmcp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fsiyuanmcp-toolbar__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fsiyuanmcp-hint {
+  color: var(--b3-theme-on-surface);
+  opacity: 0.72;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.fsiyuanmcp-version {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.fsiyuanmcp-version--match {
+  color: var(--b3-theme-primary, #3573f0);
+}
+
+.fsiyuanmcp-version--mismatch {
+  color: var(--b3-theme-error, #d23f31);
+}
+
+.fsiyuanmcp-version--offline {
+  color: #f2a93b;
+}
+
+.fsiyuanmcp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.fsiyuanmcp-row__label {
+  flex: 0 0 72px;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+}
+
+.fsiyuanmcp-row__control {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fsiyuanmcp-token-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.fsiyuanmcp-token-row .b3-text-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fsiyuanmcp-token-row .b3-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.fsiyuanmcp-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+}
+
+.fsiyuanmcp-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.fsiyuanmcp-status__dot--running { background: var(--b3-theme-primary, #3573f0); }
+.fsiyuanmcp-status__dot--starting { background: #f2a93b; }
+.fsiyuanmcp-status__dot--stopped { background: var(--b3-theme-on-surface-light, #aaa); }
+.fsiyuanmcp-status__dot--error { background: var(--b3-theme-error, #d23f31); }
+
+.fsiyuanmcp-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.fsiyuanmcp-tools__group {
+  border: 1px solid var(--b3-border-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: var(--b3-theme-background);
+}
+
+.fsiyuanmcp-tools__title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.fsiyuanmcp-tools__list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.fsiyuanmcp-tools__list li {
+  margin: 4px 0;
+  line-height: 1.45;
+}
+
+.fsiyuanmcp-tools__desc {
+  color: var(--b3-theme-on-surface);
+  opacity: 0.72;
+  font-size: 12px;
+}
+
+.fsiyuanmcp-client-config__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.fsiyuanmcp-client-config__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 160px;
+}
+
+.fsiyuanmcp-client-config__preview {
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--b3-theme-background);
+  border: 1px solid var(--b3-border-color);
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-family: var(--b3-font-family-code);
+  font-size: 12px;
+  line-height: 1.5;
+  max-height: 180px;
+  overflow: auto;
+}

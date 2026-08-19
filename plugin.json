@@ -1,0 +1,26 @@
+{
+  "name": "fsiyuanmcp",
+  "author": "fyuan",
+  "url": "https://github.com/fyuan/fsiyuanmcp",
+  "version": "0.4.2",
+  "minAppVersion": "3.0.0",
+  "backends": ["all"],
+  "frontends": ["all"],
+  "main": "index.js",
+  "displayName": {
+    "default": "fsiyuanmcp",
+    "zh_CN": "思源 MCP 服务"
+  },
+  "description": {
+    "default": "Run local HTTP MCP service for SiYuan",
+    "zh_CN": "在思源中运行本地 HTTP MCP 服务"
+  },
+  "readme": {
+    "default": "README.md"
+  },
+  "keywords": [
+    "mcp",
+    "siyuan"
+  ],
+  "disabledInPublish": false
+}
