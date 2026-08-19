@@ -4,6 +4,8 @@ import { searchNotes } from "../siyuan/search.js";
 import { readNote } from "../siyuan/notes.js";
 import { saveNote } from "../siyuan/save.js";
 import { deleteContent } from "../siyuan/delete.js";
+import { deleteDocs } from "../siyuan/delete-docs.js";
+import { listDocs } from "../siyuan/list-docs.js";
 import type { LsNotebooksData } from "../siyuan/contracts.js";
 import { SiYuanClient } from "../siyuan/client.js";
 import { getToolDescriptors, getToolGroups } from "./catalog.js";
@@ -79,6 +81,19 @@ const deleteContentSchema = z.object({
   limit: z.number().int().positive().optional()
 });
 
+const listDocsSchema = z.object({
+  notebookId: z.string().optional(),
+  parentId: z.string().optional(),
+  recursive: z.boolean().optional(),
+  limit: z.number().int().positive().optional()
+});
+
+const deleteDocsSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1),
+  confirm: z.boolean().optional(),
+  previewOnly: z.boolean().optional()
+});
+
 export class McpToolsService {
   private readonly client: SiYuanClient;
   private readonly writableNotebookId: string;
@@ -125,10 +140,7 @@ export class McpToolsService {
     }
     if (name === "search_notes" || name === "search_limited") {
       const input = searchNotesSchema.parse(args);
-      const result = await searchNotes(this.client, {
-        ...input,
-        notebookId: this.writableNotebookId
-      });
+      const result = await searchNotes(this.client, input);
       return {
         success: true,
         source: result.source,
@@ -140,21 +152,24 @@ export class McpToolsService {
     }
     if (name === "read_note") {
       const input = readNoteSchema.parse(args);
-      const result = await readNote(
-        this.client,
-        {
-          ...input,
-          notebookId: this.resolveNotebookId(input.notebookId)
-        },
-        {
-          mcpBaseUrl: this.mcpBaseUrl,
-          siyuanBaseUrl: this.siyuanBaseUrl
-        }
-      );
+      const result = await readNote(this.client, {
+        ...input,
+        notebookId: input.notebookId?.trim() || (input.path?.trim() ? this.writableNotebookId : undefined)
+      });
       return {
         success: true,
         data: result,
-        message: input.format === "text" ? "已返回纯文本正文" : "已返回干净 Markdown（含元数据与 [[标题]]）"
+        message: input.format === "text" ? "已返回纯文本正文（含附件本地路径）" : "已返回干净 Markdown（含元数据、[[标题]] 与附件本地路径）"
+      };
+    }
+
+    if (name === "list_docs") {
+      const input = listDocsSchema.parse(args);
+      const result = await listDocs(this.client, input, this.writableNotebookId);
+      return {
+        success: true,
+        data: result,
+        message: result.message
       };
     }
 
@@ -218,6 +233,12 @@ export class McpToolsService {
         previewOnly: input.previewOnly,
         limit: input.limit
       });
+      return { success: true, data: result, message: result.message };
+    }
+
+    if (name === "delete_docs") {
+      const input = deleteDocsSchema.parse(args);
+      const result = await deleteDocs(this.client, input, this.writableNotebookId);
       return { success: true, data: result, message: result.message };
     }
 

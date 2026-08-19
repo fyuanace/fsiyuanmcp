@@ -44,14 +44,38 @@ const inputSchemas: Record<string, Record<string, unknown>> = {
   read_note: {
     type: "object",
     properties: {
-      id: { type: "string", description: "文档或块 ID" },
-      notebookId: { type: "string", description: "可省略，默认可写笔记本" },
+      id: { type: "string", description: "文档或块 ID（任意笔记本）" },
+      notebookId: { type: "string", description: "按 path 读取时指定笔记本；省略则默认可写笔记本" },
       path: { type: "string", description: "人类可读路径，如 /文档标题" },
       maxChars: { type: "number", description: "正文最大字符数，默认 12000" },
       format: {
         type: "string",
         enum: ["markdown", "text"],
         description: "markdown=干净 Markdown（默认）；text=纯文本"
+      }
+    }
+  },
+  list_docs: {
+    type: "object",
+    properties: {
+      notebookId: {
+        type: "string",
+        description: "笔记本 ID；省略 parentId 时默认插件配置的可写笔记本，也可指定其他笔记本（只读列出）"
+      },
+      parentId: {
+        type: "string",
+        description: "父文档 ID；传入时列出该文档的子文档（notebookId 可省略，将从父文档解析）"
+      },
+      recursive: {
+        type: "boolean",
+        description: "是否递归包含嵌套子文档，默认 false（仅直接子文档）"
+      },
+      limit: {
+        type: "integer",
+        minimum: 1,
+        maximum: 500,
+        default: 100,
+        description: "最多返回篇数，默认 100，最大 500"
       }
     }
   },
@@ -74,7 +98,7 @@ const inputSchemas: Record<string, Record<string, unknown>> = {
   delete_content: {
     type: "object",
     properties: {
-      notebookId: { type: "string", description: "可省略，默认可写笔记本" },
+      notebookId: { type: "string", description: "可省略，默认可写笔记本（仅可写笔记本允许删除）" },
       query: { type: "string", description: "要删除的相关内容关键字" },
       scope: {
         type: "string",
@@ -92,6 +116,25 @@ const inputSchemas: Record<string, Record<string, unknown>> = {
       limit: { type: "number", description: "最多匹配条数，默认 20" }
     },
     required: ["query"]
+  },
+  delete_docs: {
+    type: "object",
+    properties: {
+      ids: {
+        type: "array",
+        items: { type: "string" },
+        description: "要删除的文档 id 列表（仅可写笔记本中的文档会执行）"
+      },
+      confirm: {
+        type: "boolean",
+        description: "为 true 时执行批量删除"
+      },
+      previewOnly: {
+        type: "boolean",
+        description: "为 true 时只预览将删文档，不执行"
+      }
+    },
+    required: ["ids"]
   }
 };
 
@@ -111,6 +154,27 @@ export function getToolDescriptors(): McpToolDescriptor[] {
 export function getResourceDescriptors(): McpResourceDescriptor[] {
   return catalog.resources.map((resource) => ({
     uri: resource.uri,
+    name: resource.name,
+    description: resource.description,
+    mimeType: resource.mimeType
+  }));
+}
+
+export function getResourceTemplates(): Array<{
+  uriTemplate: string;
+  name: string;
+  description: string;
+  mimeType: string;
+}> {
+  type ResourceTemplate = {
+    uriTemplate: string;
+    name: string;
+    description: string;
+    mimeType: string;
+  };
+  const templates = (catalog as { resourceTemplates?: ResourceTemplate[] }).resourceTemplates ?? [];
+  return templates.map((resource) => ({
+    uriTemplate: resource.uriTemplate,
     name: resource.name,
     description: resource.description,
     mimeType: resource.mimeType

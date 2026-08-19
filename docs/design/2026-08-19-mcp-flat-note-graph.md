@@ -18,6 +18,10 @@ tags: [mcp, flat-note, graph, wikilink]
 
 | 时间 | 说明 |
 |------|------|
+| 2026-08-19 | 附件：read_note 正文末尾附 localPath；不再单独暴露 asset Resource/HTTP |
+| 2026-08-19 | 附件 Resource：resolveAssetPath 本地读取；read_note.assets 增 localPath/resourceUri |
+| 2026-08-19 | search_notes 两轮检索（文档名→标题块）；命中≤5 附全文；无正文段落兜底 |
+| 2026-08-19 | 新增 list_docs、delete_docs；明确全库只读与可写笔记本写权限 |
 | 2026-08-19 | 落地：save_note、元数据头、wiki 双链、检索图谱扩展、delete_content；移除分类与块级工具 |
 | 2026-08-19 | 设置页可核对前后端版本（见 frontend-backend-version-check） |
 
@@ -36,15 +40,16 @@ tags: [mcp, flat-note, graph, wikilink]
 
 **工具**
 
-- `save_note`：同名更新保留 id；新名创建
-- `search_notes`：命中 + 同标签/双链邻居；合计 ≤2 带全文，否则只给元数据
-- `read_note`：干净 Markdown
-- `delete_content`：默认删匹配块；整篇需 `scope=document` + `confirm=true`
+- `save_note`：同名更新保留 id；新名创建（仅可写笔记本）
+- `search_notes`：全库只读；两轮（`searchDocs` → 无命中时 `fullTextSearchBlock` 仅 `h`）；命中 ≤5 带全文；无正文段落兜底
+- `list_docs`：列出笔记本顶层或 parentId 子文档；任意笔记本只读
+- `read_note`：干净 Markdown；正文末尾附 `## 附件本地路径`（`assets[]` 同步 `src`/`localPath`）；任意笔记本只读
+- `delete_content` / `delete_docs`：仅可写笔记本；批量删文档用 delete_docs(ids, confirm)
 - `get_plugin_version`
 
 **Resources**
 
-- `siyuan://tags`、`siyuan://notebooks`（无 categories）
+- `siyuan://tags`、`siyuan://notebooks`
 
 ## 其他模块引用约束
 

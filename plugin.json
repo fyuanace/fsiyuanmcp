@@ -2,7 +2,7 @@
   "name": "fsiyuanmcp",
   "author": "fyuan",
   "url": "https://github.com/fyuan/fsiyuanmcp",
-  "version": "0.4.2",
+  "version": "0.4.6",
   "minAppVersion": "3.0.0",
   "backends": ["all"],
   "frontends": ["all"],

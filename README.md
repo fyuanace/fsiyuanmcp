@@ -4,18 +4,20 @@
 
 ## 核心能力
 
-- **写入** `save_note(title, markdown, summary?, tags?, refs?)`：同名更新保留 id；标准 Markdown；`[[标题]]` 自动转思源双链
-- **检索** `search_notes`：命中 + 图谱邻居；少命中直接带全文，多命中只给元数据
-- **读取** `read_note`：干净 Markdown（含元数据头与 `[[标题]]`）
-- **删除** `delete_content`：默认删匹配段落；整篇需 `scope=document` + `confirm=true`
+- **写入** `save_note(title, markdown, summary?, tags?, refs?)`：同名更新保留 id；标准 Markdown；`[[标题]]` 自动转思源双链（**仅可写笔记本**）
+- **检索** `search_notes`：全库只读；两轮（文档名→标题块）；命中 ≤5 篇附全文；含图谱邻居
+- **浏览** `list_docs`：列出笔记本顶层文档，或某文档的直接/递归子文档（任意笔记本只读）
+- **读取** `read_note`：任意笔记本只读；正文末尾自动附附件本地路径（`assets[]` 同步列出）
+- **删除** `delete_content` / `delete_docs`：按关键字或 id 批量删除（**仅可写笔记本**）
 - **版本** `get_plugin_version`
 
 ## 推荐流程
 
-1. `search_notes({ query })` → 若 `includeFullText` 则已有正文；否则按 summary/tags/refs 筛选
-2. `read_note({ id })` 读 2～4 篇
-3. `save_note({ title, markdown, summary, tags, refs })` 新建或更新
-4. 相关删除：`delete_content({ query })`；整篇再加 `scope:"document", confirm:true`
+1. `list_docs({ notebookId? })` 或 `list_docs({ parentId })` 浏览文档树
+2. `search_notes({ query })` → 若 `includeFullText` 则已有正文；否则按 summary/tags/refs 筛选
+3. `read_note({ id })` 读 2～4 篇
+4. `save_note({ title, markdown, summary, tags, refs })` 新建或更新（仅可写笔记本）
+5. 删除：`delete_docs({ ids, confirm:true })` 或 `delete_content({ query, scope:"document", confirm:true })`
 
 ## 文档约定
 

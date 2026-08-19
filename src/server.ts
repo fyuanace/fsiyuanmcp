@@ -5,6 +5,7 @@ import { loadConfig, type AppConfig } from "./config.js";
 import { SiYuanClient } from "./siyuan/client.js";
 import { McpToolsService } from "./mcp/tools.js";
 import { MCP_INSTRUCTIONS, McpResourcesService } from "./mcp/resources.js";
+import { getResourceTemplates } from "./mcp/catalog.js";
 import { getPluginVersionInfo } from "./version.js";
 import { SiYuanApiError, type LsNotebooksData } from "./siyuan/contracts.js";
 import { ensureNotebookSelectable, validateSettings } from "./plugin/settings.js";
@@ -151,24 +152,6 @@ export function createServer(config: AppConfig): ServerContext {
     }
   });
 
-  app.get(/^\/assets\/.+/, mcpAuth, async (req, res) => {
-    const rel = decodeURIComponent(req.path).replace(/^\/+/, "").replaceAll("\\", "/");
-    if (!rel.startsWith("assets/") || rel.includes("..") || rel.includes("\0")) {
-      res.status(400).json({ ok: false, message: "Invalid asset path" });
-      return;
-    }
-    try {
-      const file = await client.getRaw(`/${rel}`);
-      res.setHeader("Content-Type", file.contentType);
-      res.send(file.buffer);
-    } catch (error) {
-      res.status(404).json({
-        ok: false,
-        message: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
   const handleMcpPost = async (req: express.Request, res: express.Response) => {
     const body = req.body as JsonRpcRequest | JsonRpcRequest[] | undefined;
     if (Array.isArray(body)) {
@@ -210,7 +193,7 @@ export function createServer(config: AppConfig): ServerContext {
         return res.json(ok(body.id, { resources: resourcesService.listResources() }));
       }
       if (body.method === "resources/templates/list") {
-        return res.json(ok(body.id, { resourceTemplates: [] }));
+        return res.json(ok(body.id, { resourceTemplates: getResourceTemplates() }));
       }
       if (body.method === "resources/read") {
         const uri = String((body.params as { uri?: string } | undefined)?.uri ?? "");

@@ -2,8 +2,8 @@
   "groups": [
     { "group": "系统", "tools": ["get_plugin_version"] },
     { "group": "记录", "tools": ["save_note"] },
-    { "group": "检索", "tools": ["search_notes", "read_note"] },
-    { "group": "维护", "tools": ["delete_content"] }
+    { "group": "检索", "tools": ["search_notes", "read_note", "list_docs"] },
+    { "group": "维护", "tools": ["delete_content", "delete_docs"] }
   ],
   "tools": [
     {
@@ -13,22 +13,32 @@
     },
     {
       "name": "save_note",
-      "description": "扁平保存笔记：title（可较长）+ markdown。同名则更新并保留 id；新名则创建。顶部自动维护元数据（主要内容/日期/标签/引用文档）。正文用标准 Markdown，引用写 [[文档标题]]（服务会转成思源双链）。可选 tags/refs/summary。不要分类路径。",
+      "description": "扁平保存笔记：title（可较长）+ markdown。同名则更新并保留 id；新名则创建。顶部自动维护元数据（主要内容/日期/标签/引用文档）。正文用标准 Markdown，引用写 [[文档标题]]（服务会转成思源双链）。可选 tags/refs/summary。不要分类路径。仅可写笔记本可保存。",
       "group": "记录"
     },
     {
       "name": "search_notes",
-      "description": "关键字/标签检索。返回命中文档元数据与图谱邻居（同标签、引用/被引用）。命中+邻居≤2 时直接附带全文 Markdown；更多时只给 summary/tags/refs/片段，由模型二次筛选后再 read_note。",
+      "description": "关键字/标签检索（全库只读）。两轮：先文档名，无命中再搜标题块；命中≤5 篇直接附带全文。另含图谱邻居扩展。",
       "group": "检索"
     },
     {
       "name": "read_note",
-      "description": "读取一篇干净 Markdown（含元数据头与 [[标题]] 双链，无思源 YAML/IAL）。format=text 返回纯文本。",
+      "description": "读取一篇干净 Markdown（含元数据头与 [[标题]] 双链，无思源 YAML/IAL）。任意笔记本只读；正文末尾自动附附件本地路径，Agent 可直接 Read 读图片/文件。",
+      "group": "检索"
+    },
+    {
+      "name": "list_docs",
+      "description": "列出笔记本顶层文档，或某文档的直接/递归子文档（任意笔记本只读）。省略 parentId 时列可写或指定笔记本顶层；传 parentId 时列该文档子文档。recursive=true 时包含嵌套子文档。",
       "group": "检索"
     },
     {
       "name": "delete_content",
-      "description": "按 query 删除相关内容。默认 scope=blocks 只删匹配段落/块；删整篇需 scope=document 且 confirm=true。可先 previewOnly=true 预览。",
+      "description": "按 query 删除相关内容（仅可写笔记本）。默认 scope=blocks 只删匹配段落/块；删整篇需 scope=document 且 confirm=true。可先 previewOnly=true 预览。",
+      "group": "维护"
+    },
+    {
+      "name": "delete_docs",
+      "description": "按文档 id 批量删除（仅可写笔记本）。可先 previewOnly=true 或省略 confirm 预览；执行删除需 confirm=true。不能删除笔记本根文档；其他笔记本中的 id 会被跳过。",
       "group": "维护"
     }
   ],

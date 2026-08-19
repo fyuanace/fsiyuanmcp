@@ -25,16 +25,12 @@ describe("format helpers", () => {
 });
 
 describe("extractAssets", () => {
-  it("returns mcp and siyuan access urls", () => {
-    const assets = extractAssets("see ![](assets/pic.png) and [file](assets/note.pdf)", {
-      mcpBaseUrl: "http://127.0.0.1:3900",
-      siyuanBaseUrl: "http://127.0.0.1:6806"
-    });
+  it("extracts image and file assets from markdown", () => {
+    const assets = extractAssets("see ![](assets/pic.png) and [file](assets/note.pdf)");
     expect(assets).toHaveLength(2);
     expect(assets[0]).toMatchObject({
       kind: "image",
-      src: "assets/pic.png",
-      mcpUrl: "http://127.0.0.1:3900/assets/pic.png"
+      src: "assets/pic.png"
     });
     expect(assets[1]?.kind).toBe("file");
   });

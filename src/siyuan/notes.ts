@@ -10,14 +10,16 @@ import {
 } from "./format.js";
 import { countDocSize, parseNoteMeta, type NoteMeta } from "./meta.js";
 import { buildTitleIndex, siyuanRefsToWiki } from "./wikilinks.js";
+import {
+  appendAssetLocalPathsFooter,
+  appendAssetLocalPathsPlain,
+  classifyAssetKind,
+  normalizeAssetSrc,
+  resolveDocAssets,
+  type DocAsset
+} from "./assets.js";
 
-export type AssetAccess = {
-  kind: "image" | "file";
-  src: string;
-  mcpUrl: string;
-  siyuanUrl: string;
-  access: string;
-};
+export type AssetAccess = DocAsset;
 
 export type NoteRef = {
   id: string;
@@ -48,11 +50,6 @@ export type ReadNoteResult = {
   backlinks: NoteRef[];
   outgoingRefs: NoteRef[];
   assets: AssetAccess[];
-};
-
-export type NoteAccessUrls = {
-  mcpBaseUrl: string;
-  siyuanBaseUrl: string;
 };
 
 type BlockInfo = {
@@ -87,25 +84,21 @@ function truncateMarkdown(markdown: string, maxChars: number): { text: string; t
 }
 
 function classifyAsset(src: string): "image" | "file" {
-  return /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(src) ? "image" : "file";
+  return classifyAssetKind(src);
 }
 
-export function extractAssets(markdown: string, urls: NoteAccessUrls): AssetAccess[] {
+export function extractAssets(markdown: string): AssetAccess[] {
   const seen = new Set<string>();
   const assets: AssetAccess[] = [];
   const push = (srcRaw: string, kindHint?: "image" | "file") => {
-    const src = srcRaw.replace(/^\.\//, "").split("?")[0].replaceAll("\\", "/");
-    if (!src.startsWith("assets/") || src.includes("..") || seen.has(src)) {
+    const src = normalizeAssetSrc(srcRaw);
+    if (!src || seen.has(src)) {
       return;
     }
     seen.add(src);
-    const encoded = src.split("/").map(encodeURIComponent).join("/");
     assets.push({
       kind: kindHint ?? classifyAsset(src),
-      src,
-      mcpUrl: `${urls.mcpBaseUrl.replace(/\/$/, "")}/${encoded}`,
-      siyuanUrl: `${urls.siyuanBaseUrl.replace(/\/$/, "")}/${encoded}`,
-      access: "用 MCP Bearer 访问 mcpUrl；或用思源 Token 访问 siyuanUrl"
+      src
     });
   };
 
@@ -174,8 +167,7 @@ function toRef(row: SqlRefRow, idKey: "block_id" | "def_block_id", titleMap: Map
 
 export async function readNote(
   client: Pick<SiYuanClient, "post">,
-  input: { id?: string; notebookId?: string; path?: string; maxChars?: number; format?: "markdown" | "text" },
-  urls: NoteAccessUrls
+  input: { id?: string; notebookId?: string; path?: string; maxChars?: number; format?: "markdown" | "text" }
 ): Promise<ReadNoteResult> {
   const id = await resolveTargetId(client, input);
   const maxChars = Math.min(Math.max(input.maxChars ?? 12000, 1000), 40000);
@@ -237,10 +229,10 @@ export async function readNote(
   const imageAssets = await client
     .post<string[]>("/api/asset/getDocImageAssets", { id: docId })
     .catch(() => [] as string[]);
-  const assets = extractAssets(bodyMarkdown, urls);
+  let assets = extractAssets(bodyMarkdown);
   for (const src of imageAssets ?? []) {
     if (typeof src === "string" && src.startsWith("assets/")) {
-      const extra = extractAssets(`![](${src})`, urls);
+      const extra = extractAssets(`![](${src})`);
       for (const item of extra) {
         if (!assets.some((asset) => asset.src === item.src)) {
           assets.push(item);
@@ -248,6 +240,13 @@ export async function readNote(
       }
     }
   }
+  assets = await resolveDocAssets(client, assets);
+
+  const markdownWithAssets = appendAssetLocalPathsFooter(bodyMarkdown, assets);
+  const textWithAssets =
+    input.format === "text"
+      ? appendAssetLocalPathsPlain(bodyText ?? markdownToPlainText(bodyMarkdown), assets)
+      : undefined;
 
   const updatedRaw = String(tagRows[0]?.updated ?? "");
   const updated =
@@ -268,8 +267,8 @@ export async function readNote(
     path: String(info.path || tagRows[0]?.path || ""),
     hPath: String(exported.hPath || tagRows[0]?.hpath || ""),
     title,
-    markdown: input.format === "text" ? bodyText ?? bodyMarkdown : bodyMarkdown,
-    ...(bodyText !== undefined ? { text: bodyText } : {}),
+    markdown: input.format === "text" ? textWithAssets ?? markdownWithAssets : markdownWithAssets,
+    ...(textWithAssets !== undefined ? { text: textWithAssets } : {}),
     truncated: clipped.truncated,
     tags,
     summary: meta.summary,

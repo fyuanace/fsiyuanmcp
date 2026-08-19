@@ -113,6 +113,9 @@ describe("McpToolsService flat note loop", () => {
         if (endpoint === "/api/asset/getDocImageAssets") {
           return ["assets/pic.png"];
         }
+        if (endpoint === "/api/asset/resolveAssetPath") {
+          return "D:/workspace/data/assets/pic.png";
+        }
         return {};
       }
     };
@@ -124,13 +127,22 @@ describe("McpToolsService flat note loop", () => {
     });
 
     const result = (await service.callTool("read_note", { id: "20200101120000-docid" })) as {
-      data: { markdown: string; tags: string[]; summary: string; refs: string[]; assets: Array<{ src: string }> };
+      data: {
+        markdown: string;
+        tags: string[];
+        summary: string;
+        refs: string[];
+        assets: Array<{ src: string; localPath?: string }>;
+      };
     };
-    expect(result.data.markdown).not.toContain("---");
+    expect(result.data.markdown).not.toContain("title: 纪要");
     expect(result.data.markdown).toContain("[[目标]]");
+    expect(result.data.markdown).toContain("## 附件本地路径");
+    expect(result.data.markdown).toContain("D:/workspace/data/assets/pic.png");
     expect(result.data.summary).toBe("会议");
     expect(result.data.tags).toContain("#work#");
     expect(result.data.assets[0]?.src).toBe("assets/pic.png");
+    expect(result.data.assets[0]?.localPath).toBe("D:/workspace/data/assets/pic.png");
   });
 
   it("search_notes accepts query and returns snippets without requiring categories", async () => {
@@ -143,20 +155,7 @@ describe("McpToolsService flat note loop", () => {
           return [{ box: "nb1", path: "/20200101120000-docid.sy", hPath: "/项目纪要" }];
         }
         if (endpoint === "/api/search/fullTextSearchBlock") {
-          return {
-            blocks: [
-              {
-                id: "20200101120000-p",
-                box: "nb1",
-                path: "/20200101120000-docid.sy",
-                hPath: "/项目纪要",
-                type: "p",
-                content: "会议内容"
-              }
-            ],
-            matchedBlockCount: 1,
-            pageCount: 1
-          };
+          throw new Error("should not heading-search when doc-name matched");
         }
         if (endpoint === "/api/query/sql") {
           return [
@@ -194,6 +193,7 @@ describe("McpToolsService flat note loop", () => {
     expect(result.data[0]?.matches?.length || result.data[0]?.snippet).toBeTruthy();
     expect(result.includeFullText).toBe(true);
     expect(endpoints).not.toContain("/api/filetree/listDocsByPath");
+    expect(endpoints).not.toContain("/api/search/fullTextSearchBlock");
   });
 
   it("advertises search_notes limit bounds and accepts oversized limit", async () => {
@@ -275,6 +275,47 @@ describe("McpToolsService flat note loop", () => {
     })) as { data: { deleted: boolean; preview: boolean } };
     expect(preview.data.preview).toBe(true);
     expect(preview.data.deleted).toBe(false);
+  });
+
+  it("denies save_note in read-only notebook", async () => {
+    const service = new McpToolsService({ post: async () => ({}) } as never, {
+      writableNotebookId: "nb1",
+      mcpBaseUrl: "http://127.0.0.1:3900",
+      siyuanBaseUrl: "http://127.0.0.1:6806"
+    });
+    await expect(
+      service.callTool("save_note", { title: "x", markdown: "y", notebookId: "nb-readonly" })
+    ).rejects.toThrow(/read-only/i);
+  });
+
+  it("lists docs via list_docs tool", async () => {
+    const client = {
+      post: async (endpoint: string) => {
+        if (endpoint === "/api/query/sql") {
+          return [
+            {
+              id: "20200101120000-docid",
+              content: "测试文档",
+              hpath: "/测试文档",
+              path: "/20200101120000-docid.sy",
+              updated: "20260819120000",
+              box: "nb1"
+            }
+          ];
+        }
+        return {};
+      }
+    };
+    const service = new McpToolsService(client as never, {
+      writableNotebookId: "nb1",
+      mcpBaseUrl: "http://127.0.0.1:3900",
+      siyuanBaseUrl: "http://127.0.0.1:6806"
+    });
+    const result = (await service.callTool("list_docs", {})) as {
+      data: { documents: Array<{ title: string }>; writable: boolean };
+    };
+    expect(result.data.documents[0]?.title).toBe("测试文档");
+    expect(result.data.writable).toBe(true);
   });
 });
 

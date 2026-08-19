@@ -11,7 +11,7 @@ import { countDocSize, parseNoteMeta } from "./meta.js";
 import { cleanExportedMarkdown } from "./format.js";
 import { buildTitleIndex, siyuanRefsToWiki } from "./wikilinks.js";
 
-export type SearchSource = "doc-name" | "content" | "tag" | "graph";
+export type SearchSource = "doc-name" | "heading" | "content" | "tag" | "graph";
 
 export type SearchHit = {
   id: string;
@@ -52,25 +52,16 @@ export type SearchNotesInput = {
   expandGraph?: boolean;
 };
 
-const CONTENT_TYPES = {
-  document: true,
-  heading: true,
-  list: true,
-  listItem: true,
-  codeBlock: true,
-  htmlBlock: true,
-  mathBlock: true,
-  table: true,
-  blockquote: true,
-  superBlock: true,
-  paragraph: true
+const HEADING_TYPES = {
+  heading: true
 };
 
 export const DEFAULT_SEARCH_LIMIT = 8;
 export const MAX_SEARCH_LIMIT = 12;
 const MATCH_CHARS = 360;
 const MAX_MATCHES = 3;
-const FULLTEXT_HIT_THRESHOLD = 2;
+/** 命中文档篇数 ≤ 此值时 search 直接附带全文（不含图谱邻居） */
+export const FULLTEXT_HIT_THRESHOLD = 5;
 
 type SqlBlockRow = {
   id?: string;
@@ -143,7 +134,7 @@ function asHitFromSql(row: SqlBlockRow, source: SearchSource, relation: SearchHi
   };
 }
 
-function asHitsFromBlocks(blocks: FullTextSearchData["blocks"]): SearchHit[] {
+function asHitsFromHeadingBlocks(blocks: FullTextSearchData["blocks"]): SearchHit[] {
   return (blocks ?? []).map((block) => {
     const docId = docIdFromStoragePath(block.path);
     return {
@@ -158,8 +149,8 @@ function asHitsFromBlocks(blocks: FullTextSearchData["blocks"]): SearchHit[] {
       matches: [],
       tags: [],
       relation: "hit" as const,
-      source: "content" as const,
-      sources: ["content"]
+      source: "heading" as const,
+      sources: ["heading"]
     };
   });
 }
@@ -378,41 +369,43 @@ export async function searchNotes(
   }
 
   const docHits: SearchHit[] = [];
-  const contentHits: SearchHit[] = [];
+  const headingHits: SearchHit[] = [];
   const tagHits: SearchHit[] = [];
 
   if (keyword) {
-    const [docs, blockResult] = await Promise.all([
-      client.post<SearchDocsItem[]>("/api/filetree/searchDocs", {
-        k: keyword,
-        flashcard: false
-      }),
-      client
+    const docs = await client.post<SearchDocsItem[]>("/api/filetree/searchDocs", {
+      k: keyword,
+      flashcard: false
+    });
+    docHits.push(...asHitsFromDocs(docs ?? []));
+
+    if (docHits.length === 0) {
+      const blockResult = await client
         .post<FullTextSearchData>("/api/search/fullTextSearchBlock", {
           query: keyword,
           page: 1,
           pageSize: Math.max(limit * 4, 20),
-          types: CONTENT_TYPES,
+          types: HEADING_TYPES,
           method: 0,
           orderBy: 0,
           groupBy: 0
         })
         .then((blockData) => ({ ok: true as const, blockData }))
-        .catch(() => ({ ok: false as const }))
-    ]);
-    docHits.push(...asHitsFromDocs(docs ?? []));
-    if (blockResult.ok) {
-      contentHits.push(...asHitsFromBlocks(blockResult.blockData.blocks ?? []));
-    } else {
-      const like = `%${sanitizeLikeQuery(keyword)}%`;
-      const rows = await querySql(
-        client,
-        `SELECT id, root_id, box, path, hpath, type, content, markdown, name, tag FROM blocks WHERE type IN ('d','h','p','l','i','c','t','b','s','m') AND (content LIKE '${like}' OR markdown LIKE '${like}' OR name LIKE '${like}') LIMIT ${limit * 4}`
-      );
-      for (const row of rows) {
-        const hit = asHitFromSql(row, "content");
-        if (hit) {
-          contentHits.push(hit);
+        .catch(() => ({ ok: false as const }));
+
+      if (blockResult.ok) {
+        headingHits.push(...asHitsFromHeadingBlocks(blockResult.blockData.blocks ?? []));
+      } else {
+        const like = `%${sanitizeLikeQuery(keyword)}%`;
+        const rows = await querySql(
+          client,
+          `SELECT id, root_id, box, path, hpath, type, content, markdown, name, tag FROM blocks WHERE type='h' AND (content LIKE '${like}' OR markdown LIKE '${like}' OR name LIKE '${like}') LIMIT ${limit * 4}`
+        );
+        for (const row of rows) {
+          const hit = asHitFromSql(row, "heading");
+          if (hit) {
+            headingHits.push(hit);
+          }
         }
       }
     }
@@ -435,7 +428,7 @@ export async function searchNotes(
     }
   }
 
-  const data = mergeToDocs(tag ? [tagHits, docHits, contentHits] : [docHits, contentHits, tagHits], limit);
+  const data = mergeToDocs(tag ? [tagHits, docHits, headingHits] : [docHits, headingHits], limit);
   if (data.length === 0) {
     return { source: "none", data: [], neighbors: [], includeFullText: false, message: "没有搜到" };
   }
@@ -451,21 +444,20 @@ export async function searchNotes(
     }
   }
 
-  const combinedCount = data.length + neighbors.length;
-  const includeFullText = combinedCount <= FULLTEXT_HIT_THRESHOLD;
+  const includeFullText = data.length <= FULLTEXT_HIT_THRESHOLD;
   if (includeFullText) {
     await enrichMeta(client, data, { includeMarkdown: true, notebookId: input.notebookId });
-    if (neighbors.length > 0) {
-      await enrichMeta(client, neighbors, { includeMarkdown: true, notebookId: input.notebookId });
-    }
   }
 
   const parts = [
     docHits.length ? `文档名 ${docHits.length}` : "",
-    contentHits.length ? `正文 ${contentHits.length}` : "",
+    headingHits.length ? `标题 ${headingHits.length}` : "",
     tagHits.length ? `标签 ${tagHits.length}` : "",
     neighbors.length ? `图谱邻居 ${neighbors.length}` : ""
   ].filter(Boolean);
+
+  const searchRound =
+    keyword && docHits.length > 0 ? "文档名" : keyword && headingHits.length > 0 ? "标题块" : keyword ? "无命中" : "";
 
   return {
     source: "mixed",
@@ -473,7 +465,7 @@ export async function searchNotes(
     neighbors,
     includeFullText,
     message: includeFullText
-      ? `命中较少（${combinedCount}），已直接附带全文 Markdown。可用标签/引用扩展阅读。`
+      ? `命中 ${data.length} 篇（${searchRound || "标签"}），已直接附带全文 Markdown。`
       : `命中 ${data.length} 篇 + 邻居 ${neighbors.length} 篇（${parts.join(" / ")}）。请根据 summary/tags/refs 二次筛选后，用 read_note 读取 2～4 篇。`
   };
 }

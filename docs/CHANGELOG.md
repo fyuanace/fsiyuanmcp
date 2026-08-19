@@ -2,6 +2,10 @@
 
 | 时间 | 说明 |
 |------|------|
+| 2026-08-19 | read_note 正文末尾附附件本地路径；移除 siyuan://asset Resource 与 HTTP /assets 代理 |
+| 2026-08-19 | read_note 附件增加 localPath/resourceUri；新增 siyuan://asset 与 siyuan://doc/{id}/assets Resource |
+| 2026-08-19 | search_notes 改为两轮（文档名→标题块），命中≤5 附全文，不再搜正文段落 |
+| 2026-08-19 | 新增 list_docs / delete_docs；读写权限：全库只读浏览，仅可写笔记本可 save/delete |
 | 2026-08-19 | 设置页增加「读取后端版本」；`GET /version` 与 `/healthz` 返回版本与 pid；版本号 0.4.2 |
 | 2026-08-19 | 版本号调整为 0.4.1，便于确认 MCP 进程已加载新构建 |
 | 2026-08-19 | 扁平文档+图谱：save_note、[[标题]] 双链、元数据头、检索扩展、delete_content；移除分类与块级工具 |

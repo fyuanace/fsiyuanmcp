@@ -75,6 +75,8 @@ describe("MCP streamable HTTP", () => {
       const listBody = (await listRes.json()) as { result: { tools: Array<{ name: string }> } };
       expect(listBody.result.tools.some((tool) => tool.name === "save_note")).toBe(true);
       expect(listBody.result.tools.some((tool) => tool.name === "delete_content")).toBe(true);
+      expect(listBody.result.tools.some((tool) => tool.name === "list_docs")).toBe(true);
+      expect(listBody.result.tools.some((tool) => tool.name === "delete_docs")).toBe(true);
       expect(listBody.result.tools.some((tool) => tool.name === "create_doc")).toBe(false);
       expect(listBody.result.tools.some((tool) => tool.name === "list_notebooks_readonly")).toBe(false);
 
@@ -89,6 +91,19 @@ describe("MCP streamable HTTP", () => {
       const resourceBody = (await resourceRes.json()) as { result: { resources: Array<{ uri: string }> } };
       expect(resourceBody.result.resources.some((item) => item.uri === "siyuan://tags")).toBe(true);
       expect(resourceBody.result.resources.some((item) => item.uri === "siyuan://categories")).toBe(false);
+
+      const templateRes = await fetch(`${origin}/mcp`, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer secret",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 4, method: "resources/templates/list", params: {} })
+      });
+      const templateBody = (await templateRes.json()) as {
+        result: { resourceTemplates: Array<{ uriTemplate: string }> };
+      };
+      expect(templateBody.result.resourceTemplates).toEqual([]);
     } finally {
       await close();
     }
