@@ -17,15 +17,41 @@ const toolCatalog = {
   groups: [
     { group: "系统", tools: ["get_plugin_version"] },
     { group: "记录", tools: ["save_note"] },
-    { group: "检索", tools: ["search_notes", "read_note"] },
-    { group: "维护", tools: ["delete_content"] }
+    { group: "检索", tools: ["search_notes", "read_note", "list_docs"] },
+    { group: "维护", tools: ["delete_content", "delete_docs"] }
   ],
   tools: [
     { name: "get_plugin_version", description: "返回 fsiyuanmcp MCP 插件与服务版本号", group: "系统" },
-    { name: "save_note", description: "扁平保存笔记：title+markdown。同名更新保留 id；[[标题]] 转双链；顶部维护元数据", group: "记录" },
-    { name: "search_notes", description: "关键字/标签检索；命中少带全文，命中多只给元数据与图谱邻居", group: "检索" },
-    { name: "read_note", description: "读取干净 Markdown（含元数据与 [[标题]]）", group: "检索" },
-    { name: "delete_content", description: "默认删匹配块；整篇需 scope=document 且 confirm=true", group: "维护" }
+    {
+      name: "save_note",
+      description: "扁平保存笔记：title+markdown。同名更新保留 id；[[标题]] 转双链；仅可写笔记本",
+      group: "记录"
+    },
+    {
+      name: "search_notes",
+      description: "关键字/标签检索（全库只读）；文档名→标题块；命中≤5 附全文",
+      group: "检索"
+    },
+    {
+      name: "read_note",
+      description: "读取干净 Markdown；正文末尾附附件本地路径，Agent 可直接 Read 读文件",
+      group: "检索"
+    },
+    {
+      name: "list_docs",
+      description: "列出笔记本顶层或某文档子文档（任意笔记本只读）",
+      group: "检索"
+    },
+    {
+      name: "delete_content",
+      description: "默认删匹配块；整篇需 scope=document 且 confirm=true（仅可写笔记本）",
+      group: "维护"
+    },
+    {
+      name: "delete_docs",
+      description: "按文档 id 批量删除（仅可写笔记本，confirm=true）",
+      group: "维护"
+    }
   ],
   resources: [
     { uri: "siyuan://tags", name: "tags", description: "已有标签列表，写入时可选复用", mimeType: "application/json" },
@@ -437,73 +463,183 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
     this.notebookSelect = notebookSelect;
 
     this.setting.addItem({
-      title: "Agent 可写笔记本",
-      description: "仅该笔记本允许 MCP 写入，其它笔记本只读",
-      actionElement: notebookSelect
-    });
-
-    this.setting.addItem({
-      title: "顶栏显示 MCP 状态",
-      description: "开启后在顶栏显示 MCP 运行状态",
-      createActionElement: () => {
-        const toggle = document.createElement("input");
-        toggle.className = "b3-switch fn__flex-center";
-        toggle.type = "checkbox";
-        toggle.checked = this.settings.showTopbarStatus;
-        toggle.addEventListener("change", async () => {
-          this.settings.showTopbarStatus = toggle.checked;
-          await this.saveSettings();
-          showMessage("顶栏显示设置将在刷新插件后生效");
-        });
-        return toggle;
-      }
-    });
-
-    this.setting.addItem({
-      title: "插件启用时自动启动 MCP 服务",
-      description: "开启后，思源启动或关闭后再打开本插件，都会延迟自动拉起 MCP",
-      createActionElement: () => {
-        const toggle = document.createElement("input");
-        toggle.className = "b3-switch fn__flex-center";
-        toggle.type = "checkbox";
-        toggle.checked = this.settings.autoStartOnBoot;
-        toggle.addEventListener("change", async () => {
-          this.settings.autoStartOnBoot = toggle.checked;
-          await this.saveSettings();
-        });
-        return toggle;
-      }
-    });
-
-    this.setting.addItem({
-      title: "自动启动延迟（1000-2000ms）",
-      description: "插件启用后延迟 1-2 秒再启动 MCP（思源启动与插件开关均生效）",
-      actionElement: delayInput
-    });
-
-    this.setting.addItem({
-      title: "HTTP/HTTPS 连接",
-      description: "适合桌面端直连、WSL、局域网访问。进程在监听即视为运行中。",
-      direction: "row",
-      createActionElement: () => this.buildHttpConnectionPanel()
-    });
-
-    this.setting.addItem({
-      title: "MCP 工具总览",
-      description: "当前 MCP 服务对外提供的工具，按功能分组",
-      direction: "row",
-      createActionElement: () => this.buildToolsOverviewElement()
-    });
-
-    this.setting.addItem({
-      title: "常用客户端配置",
-      description: "选择客户端后复制配置，HTTP 地址使用当前端口与令牌",
-      direction: "row",
-      createActionElement: () => this.buildClientConfigPanel()
+      title: "",
+      description: "",
+      createActionElement: () => this.buildSettingsTabs({ notebookSelect, delayInput })
     });
 
     this.refreshConnectionStatusBar();
     this.patchSettingOpen();
+  }
+
+  buildSettingsTabs({ notebookSelect, delayInput }) {
+    const root = document.createElement("div");
+    root.className = "fsiyuanmcp-settings-tabs";
+
+    const bar = document.createElement("div");
+    bar.className = "fsiyuanmcp-tabs__bar";
+    bar.setAttribute("role", "tablist");
+
+    const panels = document.createElement("div");
+    panels.className = "fsiyuanmcp-tabs__panels";
+
+    const tabs = [
+      { id: "config", label: "配置" },
+      { id: "intro", label: "MCP 介绍" },
+      { id: "server", label: "MCP 服务器 HTTP" }
+    ];
+
+    const activateTab = (tabId) => {
+      for (const tab of tabs) {
+        const btn = bar.querySelector(`[data-tab="${tab.id}"]`);
+        const panel = panels.querySelector(`[data-tab="${tab.id}"]`);
+        const active = tab.id === tabId;
+        if (btn) {
+          btn.classList.toggle("fsiyuanmcp-tabs__btn--active", active);
+          btn.setAttribute("aria-selected", active ? "true" : "false");
+        }
+        if (panel) {
+          panel.hidden = !active;
+        }
+      }
+    };
+
+    for (const tab of tabs) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "fsiyuanmcp-tabs__btn";
+      btn.dataset.tab = tab.id;
+      btn.textContent = tab.label;
+      btn.setAttribute("role", "tab");
+      btn.addEventListener("click", () => activateTab(tab.id));
+      bar.appendChild(btn);
+
+      const panel = document.createElement("div");
+      panel.className = "fsiyuanmcp-tabs__panel";
+      panel.dataset.tab = tab.id;
+      panel.setAttribute("role", "tabpanel");
+      panels.appendChild(panel);
+    }
+
+    panels.querySelector('[data-tab="config"]').appendChild(this.buildConfigTabPanel({ notebookSelect, delayInput }));
+    panels.querySelector('[data-tab="intro"]').appendChild(this.buildIntroTabPanel());
+    panels.querySelector('[data-tab="server"]').appendChild(this.buildServerTabPanel());
+
+    root.append(bar, panels);
+    activateTab("config");
+    return root;
+  }
+
+  buildConfigTabPanel({ notebookSelect, delayInput }) {
+    const panel = document.createElement("div");
+    panel.className = "fsiyuanmcp-tab-stack";
+
+    const notebookSection = document.createElement("section");
+    notebookSection.className = "fsiyuanmcp-config-section";
+    notebookSection.innerHTML = `
+      <div class="fsiyuanmcp-tab-section-title">Agent 可写笔记本</div>
+      <div class="fsiyuanmcp-hint">仅该笔记本允许 MCP 写入，其它笔记本只读</div>
+    `;
+    notebookSection.appendChild(notebookSelect);
+
+    const topbarSection = document.createElement("section");
+    topbarSection.className = "fsiyuanmcp-config-section";
+    const topbarTitle = document.createElement("div");
+    topbarTitle.className = "fsiyuanmcp-tab-section-title";
+    topbarTitle.textContent = "顶栏显示 MCP 状态";
+    const topbarHint = document.createElement("div");
+    topbarHint.className = "fsiyuanmcp-hint";
+    topbarHint.textContent = "开启后在顶栏显示 MCP 运行状态";
+    const topbarRow = document.createElement("label");
+    topbarRow.className = "fsiyuanmcp-row";
+    const topbarToggle = document.createElement("input");
+    topbarToggle.className = "b3-switch fn__flex-center";
+    topbarToggle.type = "checkbox";
+    topbarToggle.checked = this.settings.showTopbarStatus;
+    topbarToggle.addEventListener("change", async () => {
+      this.settings.showTopbarStatus = topbarToggle.checked;
+      await this.saveSettings();
+      showMessage("顶栏显示设置将在刷新插件后生效");
+    });
+    topbarRow.append(topbarToggle, document.createTextNode(" 在顶栏显示 MCP 状态"));
+    topbarSection.append(topbarTitle, topbarHint, topbarRow);
+
+    const autoStartSection = document.createElement("section");
+    autoStartSection.className = "fsiyuanmcp-config-section";
+    const autoStartTitle = document.createElement("div");
+    autoStartTitle.className = "fsiyuanmcp-tab-section-title";
+    autoStartTitle.textContent = "插件启用时自动启动 MCP 服务";
+    const autoStartHint = document.createElement("div");
+    autoStartHint.className = "fsiyuanmcp-hint";
+    autoStartHint.textContent = "思源启动或关闭后再打开本插件，都会延迟自动拉起 MCP";
+    const autoStartRow = document.createElement("label");
+    autoStartRow.className = "fsiyuanmcp-row";
+    const autoStartToggle = document.createElement("input");
+    autoStartToggle.className = "b3-switch fn__flex-center";
+    autoStartToggle.type = "checkbox";
+    autoStartToggle.checked = this.settings.autoStartOnBoot;
+    autoStartToggle.addEventListener("change", async () => {
+      this.settings.autoStartOnBoot = autoStartToggle.checked;
+      await this.saveSettings();
+    });
+    autoStartRow.append(autoStartToggle, document.createTextNode(" 随思源启动自动拉起服务"));
+    autoStartSection.append(autoStartTitle, autoStartHint, autoStartRow);
+
+    const delaySection = document.createElement("section");
+    delaySection.className = "fsiyuanmcp-config-section";
+    const delayTitle = document.createElement("div");
+    delayTitle.className = "fsiyuanmcp-tab-section-title";
+    delayTitle.textContent = "自动启动延迟（1000-2000ms）";
+    const delayHint = document.createElement("div");
+    delayHint.className = "fsiyuanmcp-hint";
+    delayHint.textContent = "插件启用后延迟 1-2 秒再启动 MCP";
+    delayInput.className = "b3-text-field fn__block";
+    delaySection.append(delayTitle, delayHint, delayInput);
+
+    panel.append(notebookSection, topbarSection, autoStartSection, delaySection);
+    return panel;
+  }
+
+  buildIntroTabPanel() {
+    const panel = document.createElement("div");
+    panel.className = "fsiyuanmcp-tab-stack";
+
+    const intro = document.createElement("div");
+    intro.className = "fsiyuanmcp-hint";
+    intro.innerHTML =
+      "扁平长标题笔记 + 标签/双链图谱。Agent 用 <code>save_note</code> 写入（仅可写笔记本），" +
+      "<code>search_notes</code> / <code>list_docs</code> / <code>read_note</code> 全库只读浏览。" +
+      "<code>read_note</code> 正文末尾会附附件本地路径。";
+
+    const toolsTitle = document.createElement("div");
+    toolsTitle.className = "fsiyuanmcp-tab-section-title";
+    toolsTitle.textContent = "工具与资源";
+
+    panel.append(intro, toolsTitle, this.buildToolsOverviewElement());
+    return panel;
+  }
+
+  buildServerTabPanel() {
+    const panel = document.createElement("div");
+    panel.className = "fsiyuanmcp-tab-stack";
+
+    const httpTitle = document.createElement("div");
+    httpTitle.className = "fsiyuanmcp-tab-section-title";
+    httpTitle.textContent = "MCP 服务器 HTTP";
+    const httpHint = document.createElement("div");
+    httpHint.className = "fsiyuanmcp-hint";
+    httpHint.textContent = "适合桌面端直连、WSL、局域网访问。进程在监听即视为运行中。";
+
+    const clientTitle = document.createElement("div");
+    clientTitle.className = "fsiyuanmcp-tab-section-title";
+    clientTitle.textContent = "常用客户端配置";
+    const clientHint = document.createElement("div");
+    clientHint.className = "fsiyuanmcp-hint";
+    clientHint.textContent = "选择客户端后复制配置，HTTP 地址使用当前端口与令牌。";
+
+    panel.append(httpTitle, httpHint, this.buildHttpConnectionPanel(), clientTitle, clientHint, this.buildClientConfigPanel());
+    this.refreshClientConfigPreview();
+    return panel;
   }
 
   patchSettingOpen() {
@@ -544,11 +680,41 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
       content.style.minHeight = "0";
       content.style.flex = "1 1 auto";
     }
-    dialog.querySelectorAll(".fsiyuanmcp-panel, .fsiyuanmcp-tools").forEach((el) => {
+    dialog.querySelectorAll(".b3-label:has(.fsiyuanmcp-settings-tabs)").forEach((wrap) => {
+      for (const child of wrap.children) {
+        if (child.classList.contains("fsiyuanmcp-settings-tabs")) {
+          continue;
+        }
+        if (!child.querySelector(".fsiyuanmcp-settings-tabs")) {
+          child.style.display = "none";
+        }
+      }
+    });
+    const tabsRoot = dialog.querySelector(".fsiyuanmcp-settings-tabs");
+    if (tabsRoot && content) {
+      let node = tabsRoot;
+      while (node && node !== content) {
+        node.classList.remove("fn__size200", "fn__flex-center");
+        node.style.overflow = "visible";
+        node.style.maxHeight = "none";
+        node.style.height = "auto";
+        node.style.minHeight = "0";
+        node.style.flex = "none";
+        node = node.parentElement;
+      }
+    }
+    dialog
+      .querySelectorAll(
+        ".fsiyuanmcp-settings-tabs, .fsiyuanmcp-tabs__panels, .fsiyuanmcp-tabs__panel, .fsiyuanmcp-tab-stack, .fsiyuanmcp-tools, .fsiyuanmcp-panel"
+      )
+      .forEach((el) => {
       el.classList.remove("fn__size200", "fn__flex-center", "fn__block");
       el.style.width = "100%";
       el.style.maxWidth = "100%";
       el.style.flex = "none";
+      el.style.overflow = "visible";
+      el.style.maxHeight = "none";
+      el.style.height = "auto";
       const wrap = el.closest(".b3-label");
       if (wrap) {
         wrap.style.display = "flex";
@@ -556,10 +722,7 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
         wrap.style.alignItems = "stretch";
         wrap.style.height = "auto";
         wrap.style.flex = "none";
-        const title = wrap.firstElementChild;
-        if (title) {
-          title.style.flex = "none";
-        }
+        wrap.style.padding = "0";
       }
     });
   }
@@ -873,7 +1036,7 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
     hint.className = "fsiyuanmcp-hint";
     hint.innerHTML =
       "复制许多 MCP 客户端通用的 <code>mcpServers</code> JSON。<br/>" +
-      "先选择客户端和连接方式，再复制对应格式。HTTP/HTTPS 会使用当前服务地址。";
+      "先选择客户端和连接方式，再复制对应格式。地址使用当前 MCP 服务器 HTTP 端口与令牌。";
 
     container.append(toolbar, preview, hint);
 

@@ -1,3 +1,7 @@
+.fsiyuanmcp-topbar {
+  position: relative;
+}
+
 .fsiyuanmcp-topbar svg {
   width: 16px;
   height: 16px;
@@ -7,7 +11,8 @@
   content: "";
   position: absolute;
   top: 3px;
-  left: 3px;
+  right: 3px;
+  left: auto;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -49,6 +54,103 @@
   align-items: stretch;
   height: auto;
   flex: none;
+}
+
+.b3-dialog__content .b3-label:has(.fsiyuanmcp-settings-tabs) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  height: auto;
+  flex: none;
+  padding-top: 0;
+}
+
+.b3-dialog__content .b3-label:has(.fsiyuanmcp-settings-tabs) > :not(:has(.fsiyuanmcp-settings-tabs)):not(.fsiyuanmcp-settings-tabs) {
+  display: none !important;
+}
+
+.b3-dialog__content .b3-label:has(.fsiyuanmcp-settings-tabs) > .fsiyuanmcp-settings-tabs,
+.b3-dialog__content .b3-label:has(.fsiyuanmcp-settings-tabs) > :has(.fsiyuanmcp-settings-tabs) {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+  flex: none !important;
+}
+
+.fsiyuanmcp-settings-dialog .fsiyuanmcp-settings-tabs,
+.fsiyuanmcp-settings-dialog .fsiyuanmcp-tabs__panels,
+.fsiyuanmcp-settings-dialog .fsiyuanmcp-tabs__panel,
+.fsiyuanmcp-settings-dialog .fsiyuanmcp-tab-stack,
+.fsiyuanmcp-settings-dialog .fsiyuanmcp-tools,
+.fsiyuanmcp-settings-dialog .fsiyuanmcp-panel {
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+.fsiyuanmcp-settings-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.fsiyuanmcp-tabs__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--b3-border-color);
+  padding-bottom: 8px;
+  flex: none;
+}
+
+.fsiyuanmcp-tabs__btn {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--b3-theme-on-surface);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.fsiyuanmcp-tabs__btn:hover {
+  background: var(--b3-list-hover);
+}
+
+.fsiyuanmcp-tabs__btn--active {
+  background: var(--b3-theme-primary-lightest, rgba(53, 115, 240, 0.12));
+  color: var(--b3-theme-primary, #3573f0);
+  font-weight: 600;
+}
+
+.fsiyuanmcp-tabs__panels {
+  width: 100%;
+}
+
+.fsiyuanmcp-tabs__panel[hidden] {
+  display: none !important;
+}
+
+.fsiyuanmcp-tab-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+
+.fsiyuanmcp-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fsiyuanmcp-tab-section-title {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.4;
 }
 
 .fsiyuanmcp-panel {
@@ -162,8 +264,6 @@
   flex-direction: column;
   gap: 10px;
   width: 100%;
-  max-height: 220px;
-  overflow: auto;
 }
 
 .fsiyuanmcp-tools__group {
@@ -219,6 +319,4 @@
   font-family: var(--b3-font-family-code);
   font-size: 12px;
   line-height: 1.5;
-  max-height: 180px;
-  overflow: auto;
 }
