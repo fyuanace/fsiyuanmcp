@@ -23,24 +23,20 @@ describe("note meta", () => {
     expect(parsed.meta.tags).toContain("#qt#");
     expect(parsed.meta.refs).toContain("相关文档");
     expect(parsed.body).toContain("正文段落");
+    expect(markdown).toMatch(/^---\n[\s\S]*?\n---\n\n正文段落/);
   });
 
-  it("still parses legacy HTML comment meta", () => {
+  it("does not parse removed HTML comment meta", () => {
     const legacy = [
       "<!-- fsiyuanmcp-meta -->",
       "- 主要内容：旧格式",
-      "- 更新日期：2026-08-19",
-      "- 标签：#work#",
-      "- 引用文档：[[目标]]",
       "<!-- /fsiyuanmcp-meta -->",
       "",
       "正文"
     ].join("\n");
     const parsed = parseNoteMeta(legacy);
-    expect(parsed.meta.summary).toBe("旧格式");
-    expect(parsed.meta.tags).toContain("#work#");
-    expect(parsed.meta.refs).toContain("目标");
-    expect(parsed.body.trim()).toBe("正文");
+    expect(parsed.meta.summary).toBe("");
+    expect(parsed.body).toContain("<!-- fsiyuanmcp-meta -->");
   });
 
   it("keeps our frontmatter when cleaning SiYuan export YAML", () => {

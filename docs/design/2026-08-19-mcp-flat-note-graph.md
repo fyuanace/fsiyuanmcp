@@ -37,7 +37,7 @@ tags: [mcp, flat-note, graph, wikilink]
 - 路径：`/很长的主题标题`（可写笔记本根下）
 - 顶部元数据（MCP 维护，YAML frontmatter）：主要内容、更新日期、标签、引用文档；不写思源文档属性
 - Agent 写 `[[标题]]`；写入前转 `((id '标题'))`；读回还原 `[[标题]]`
-- 仍兼容解析旧版 `<!-- fsiyuanmcp-meta -->` 注释块（新写入一律用 YAML）
+- frontmatter 与正文之间保留一个空行
 - `charCount` 约 ≥12000 或汉字约 ≥8000 时 `tooLarge=true`，提示另建文档互链
 
 **工具**

@@ -10,9 +10,6 @@ export type NoteMeta = {
   refs: string[];
 };
 
-const META_START = "<!-- fsiyuanmcp-meta -->";
-const META_END = "<!-- /fsiyuanmcp-meta -->";
-
 const EMPTY_META: NoteMeta = { summary: "", updated: "", tags: [], refs: [] };
 
 function formatDate(value?: string | Date): string {
@@ -180,81 +177,6 @@ export function splitYamlFrontmatter(markdown: string): {
   return { frontmatter, body, hasFence: true };
 }
 
-function parseHtmlCommentMeta(markdown: string): { meta: NoteMeta; body: string } | null {
-  const start = markdown.indexOf(META_START);
-  const end = markdown.indexOf(META_END);
-  if (start === -1 || end === -1 || end < start) {
-    return null;
-  }
-  const block = markdown.slice(start + META_START.length, end);
-  const meta: NoteMeta = { ...EMPTY_META };
-  for (const raw of block.split(/\r?\n/)) {
-    const line = raw.trim();
-    const summary = line.match(/^[-*]\s*主要内容[：:]\s*(.*)$/);
-    const updated = line.match(/^[-*]\s*更新日期[：:]\s*(.*)$/);
-    const tags = line.match(/^[-*]\s*标签[：:]\s*(.*)$/);
-    const refs = line.match(/^[-*]\s*引用文档[：:]\s*(.*)$/);
-    if (summary) {
-      meta.summary = summary[1].trim();
-    } else if (updated) {
-      meta.updated = updated[1].trim();
-    } else if (tags) {
-      meta.tags = parseTagField(tags[1]);
-      if (meta.tags.length === 0) {
-        meta.tags = normalizeTags(tags[1].split(/[,，\s]+/).filter(Boolean));
-      }
-    } else if (refs) {
-      meta.refs = [...refs[1].matchAll(/\[\[([^[\]]+)]]/g)].map((m) => m[1].trim()).filter(Boolean);
-    }
-  }
-  const before = markdown.slice(0, start).trimEnd();
-  const after = markdown.slice(end + META_END.length).replace(/^\n+/, "");
-  const body = [before, after].filter(Boolean).join("\n\n");
-  return { meta, body };
-}
-
-function parseBulletMetaFallback(markdown: string): { meta: NoteMeta; body: string } {
-  const lines = markdown.split(/\r?\n/);
-  let i = 0;
-  const meta: NoteMeta = { ...EMPTY_META };
-  while (i < lines.length) {
-    const line = lines[i].trim();
-    if (!line) {
-      i += 1;
-      continue;
-    }
-    const summary = line.match(/^[-*]\s*主要内容[：:]\s*(.*)$/);
-    const updated = line.match(/^[-*]\s*更新日期[：:]\s*(.*)$/);
-    const tags = line.match(/^[-*]\s*标签[：:]\s*(.*)$/);
-    const refs = line.match(/^[-*]\s*引用文档[：:]\s*(.*)$/);
-    if (summary) {
-      meta.summary = summary[1].trim();
-      i += 1;
-      continue;
-    }
-    if (updated) {
-      meta.updated = updated[1].trim();
-      i += 1;
-      continue;
-    }
-    if (tags) {
-      meta.tags = parseTagField(tags[1]);
-      if (meta.tags.length === 0) {
-        meta.tags = normalizeTags(tags[1].split(/[,，\s]+/).filter(Boolean));
-      }
-      i += 1;
-      continue;
-    }
-    if (refs) {
-      meta.refs = [...refs[1].matchAll(/\[\[([^[\]]+)]]/g)].map((m) => m[1].trim()).filter(Boolean);
-      i += 1;
-      continue;
-    }
-    break;
-  }
-  return { meta, body: lines.slice(i).join("\n").replace(/^\n+/, "") };
-}
-
 export function parseNoteMeta(markdown: string): { meta: NoteMeta; body: string } {
   const yaml = splitYamlFrontmatter(markdown);
   if (yaml.hasFence && yaml.frontmatter !== null && isOurMetaFrontmatter(yaml.frontmatter)) {
@@ -263,13 +185,7 @@ export function parseNoteMeta(markdown: string): { meta: NoteMeta; body: string 
       body: yaml.body.replace(/^\n+/, "")
     };
   }
-
-  const html = parseHtmlCommentMeta(markdown);
-  if (html) {
-    return html;
-  }
-
-  return parseBulletMetaFallback(markdown);
+  return { meta: { ...EMPTY_META }, body: markdown.replace(/^\n+/, "") };
 }
 
 export function buildNoteMetaBlock(meta: Partial<NoteMeta> & { summary?: string }): string {
@@ -323,7 +239,7 @@ export function injectNoteMeta(
   };
   const body = parsed.body.replace(/^\n+/, "").replace(/\n+$/, "");
   const block = buildNoteMetaBlock(meta);
-  const markdownOut = body ? `${block}\n\n${body}\n` : `${block}\n`;
+  const markdownOut = body ? `${block}\n\n${body}\n` : `${block}\n\n`;
   return { markdown: markdownOut, meta };
 }
 

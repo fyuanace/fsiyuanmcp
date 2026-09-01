@@ -29,7 +29,7 @@ describe("searchNotes", () => {
           return {
             hPath: "/Inbox/a",
             content:
-              "<!-- fsiyuanmcp-meta -->\n- 主要内容：hello 文档\n- 更新日期：2026-08-19\n- 标签：#work#\n- 引用文档：\n<!-- /fsiyuanmcp-meta -->\n\nhello body"
+              "---\n主要内容: hello 文档\n更新日期: 2026-08-19\n标签:\n  - work\n引用文档: []\n---\n\nhello body"
           };
         }
         return [];
@@ -87,7 +87,7 @@ describe("searchNotes", () => {
         if (endpoint === "/api/export/exportMdContent") {
           return {
             hPath: "/Inbox/a",
-            content: "<!-- fsiyuanmcp-meta -->\n- 主要内容：hello\n<!-- /fsiyuanmcp-meta -->\n\nhello body"
+            content: "---\n主要内容: hello\n更新日期: 2026-08-19\n标签: []\n引用文档: []\n---\n\nhello body"
           };
         }
         return [];
@@ -123,7 +123,7 @@ describe("searchNotes", () => {
         if (endpoint === "/api/export/exportMdContent") {
           return {
             content:
-              "<!-- fsiyuanmcp-meta -->\n- 主要内容：note\n- 更新日期：2026-08-19\n- 标签：#work#\n- 引用文档：\n<!-- /fsiyuanmcp-meta -->\n\nnote"
+              "---\n主要内容: note\n更新日期: 2026-08-19\n标签:\n  - work\n引用文档: []\n---\n\nnote"
           };
         }
         return [];

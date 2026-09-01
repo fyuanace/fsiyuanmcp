@@ -177,7 +177,7 @@ describe("McpToolsService flat note loop", () => {
           return {
             hPath: "/项目纪要",
             content:
-              "<!-- fsiyuanmcp-meta -->\n- 主要内容：会议纪要\n- 更新日期：2026-08-19\n- 标签：#work#\n- 引用文档：\n<!-- /fsiyuanmcp-meta -->\n\n会议内容"
+              "---\n主要内容: 会议纪要\n更新日期: 2026-08-19\n标签:\n  - work\n引用文档: []\n---\n\n会议内容"
           };
         }
         return [];

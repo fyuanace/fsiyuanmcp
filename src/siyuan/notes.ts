@@ -204,7 +204,7 @@ export async function readNote(
     client,
     `SELECT tag, hpath, box, path, content, updated FROM blocks WHERE id='${docId}' LIMIT 1`
   );
-  // Tags come from YAML frontmatter (or legacy meta block), not SiYuan document attributes.
+  // Tags come from YAML frontmatter only, not SiYuan document attributes.
   let tags = parsedMeta.meta.tags;
   if (tags.length === 0) {
     tags = parseTagField(tagRows[0]?.tag);
