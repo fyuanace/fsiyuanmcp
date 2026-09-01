@@ -18,6 +18,7 @@ tags: [mcp, flat-note, graph, wikilink]
 
 | 时间 | 说明 |
 |------|------|
+| 2026-09-01 | 元数据改为标准 YAML frontmatter；不再写入思源文档属性 |
 | 2026-08-19 | 附件：read_note 正文末尾附 localPath；不再单独暴露 asset Resource/HTTP |
 | 2026-08-19 | 附件 Resource：resolveAssetPath 本地读取；read_note.assets 增 localPath/resourceUri |
 | 2026-08-19 | search_notes 两轮检索（文档名→标题块）；命中≤5 附全文；无正文段落兜底 |
@@ -34,8 +35,9 @@ tags: [mcp, flat-note, graph, wikilink]
 **文档模型**
 
 - 路径：`/很长的主题标题`（可写笔记本根下）
-- 顶部元数据（MCP 维护）：主要内容、更新日期、标签、引用文档
+- 顶部元数据（MCP 维护，YAML frontmatter）：主要内容、更新日期、标签、引用文档；不写思源文档属性
 - Agent 写 `[[标题]]`；写入前转 `((id '标题'))`；读回还原 `[[标题]]`
+- 仍兼容解析旧版 `<!-- fsiyuanmcp-meta -->` 注释块（新写入一律用 YAML）
 - `charCount` 约 ≥12000 或汉字约 ≥8000 时 `tooLarge=true`，提示另建文档互链
 
 **工具**

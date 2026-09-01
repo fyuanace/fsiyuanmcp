@@ -73,7 +73,10 @@ describe("McpToolsService flat note loop", () => {
     expect(result.data.meta.refs).toContain("被引用文档");
     const createCall = calls.find((item) => item.endpoint === "/api/filetree/createDocWithMd");
     expect(String(createCall?.body.markdown)).toContain("((20200101120000-refdoc");
-    expect(String(createCall?.body.markdown)).toContain("主要内容");
+    expect(String(createCall?.body.markdown)).toContain("主要内容:");
+    expect(String(createCall?.body.markdown)).toMatch(/^---\n/);
+    expect(String(createCall?.body.markdown)).toContain("- qt");
+    expect(calls.some((item) => item.endpoint === "/api/attr/setBlockAttrs")).toBe(false);
   });
 
   it("reads clean markdown with wiki links restored", async () => {
@@ -92,7 +95,7 @@ describe("McpToolsService flat note loop", () => {
           return {
             hPath: "/纪要",
             content:
-              "---\ntitle: 纪要\n---\n\n# 纪要\n\n<!-- fsiyuanmcp-meta -->\n- 主要内容：会议\n- 更新日期：2026-08-19\n- 标签：#work#\n- 引用文档：[[目标]]\n<!-- /fsiyuanmcp-meta -->\n\n见 ((20200101120000-target '目标')) 与 ![](assets/pic.png)"
+              "---\ntitle: 纪要\n---\n\n# 纪要\n\n---\n主要内容: 会议\n更新日期: 2026-08-19\n标签:\n  - work\n引用文档:\n  - 目标\n---\n\n见 ((20200101120000-target '目标')) 与 ![](assets/pic.png)"
           };
         }
         if (endpoint === "/api/query/sql") {
@@ -136,6 +139,7 @@ describe("McpToolsService flat note loop", () => {
       };
     };
     expect(result.data.markdown).not.toContain("title: 纪要");
+    expect(result.data.markdown).toContain("主要内容: 会议");
     expect(result.data.markdown).toContain("[[目标]]");
     expect(result.data.markdown).toContain("## 附件本地路径");
     expect(result.data.markdown).toContain("D:/workspace/data/assets/pic.png");

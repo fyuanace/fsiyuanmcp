@@ -13,7 +13,7 @@
     },
     {
       "name": "save_note",
-      "description": "扁平保存笔记：title（可较长）+ markdown。同名则更新并保留 id；新名则创建。顶部自动维护元数据（主要内容/日期/标签/引用文档）。正文用标准 Markdown，引用写 [[文档标题]]（服务会转成思源双链）。可选 tags/refs/summary。不要分类路径。仅可写笔记本可保存。",
+      "description": "扁平保存笔记：title（可较长）+ markdown。同名则更新并保留 id；新名则创建。顶部自动维护 YAML frontmatter（主要内容/日期/标签/引用文档），不写思源文档属性。正文用标准 Markdown，引用写 [[文档标题]]（服务会转成思源双链）。可选 tags/refs/summary。不要分类路径。仅可写笔记本可保存。",
       "group": "记录"
     },
     {
@@ -23,7 +23,7 @@
     },
     {
       "name": "read_note",
-      "description": "读取一篇干净 Markdown（含元数据头与 [[标题]] 双链，无思源 YAML/IAL）。任意笔记本只读；正文末尾自动附附件本地路径，Agent 可直接 Read 读图片/文件。",
+      "description": "读取一篇干净 Markdown（含 YAML frontmatter 元数据与 [[标题]] 双链，无思源 YAML/IAL）。任意笔记本只读；正文末尾自动附附件本地路径，Agent 可直接 Read 读图片/文件。",
       "group": "检索"
     },
     {

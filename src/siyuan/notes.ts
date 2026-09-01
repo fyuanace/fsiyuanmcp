@@ -204,17 +204,13 @@ export async function readNote(
     client,
     `SELECT tag, hpath, box, path, content, updated FROM blocks WHERE id='${docId}' LIMIT 1`
   );
-  let tags = parseTagField(tagRows[0]?.tag);
+  // Tags come from YAML frontmatter (or legacy meta block), not SiYuan document attributes.
+  let tags = parsedMeta.meta.tags;
   if (tags.length === 0) {
-    try {
-      const attrs = await client.post<Record<string, string>>("/api/attr/getBlockAttrs", { id: docId });
-      tags = parseTagField(attrs.tags ?? attrs["custom-tags"]);
-    } catch {
-      tags = parsedMeta.meta.tags;
-    }
+    tags = parseTagField(tagRows[0]?.tag);
   }
   if (tags.length === 0) {
-    tags = parsedMeta.meta.tags.length ? parsedMeta.meta.tags : parseTagField(rawMarkdown);
+    tags = parseTagField(rawMarkdown);
   }
 
   const backlinkRows = await sql<SqlRefRow>(

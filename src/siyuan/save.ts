@@ -1,11 +1,6 @@
 import type { SiYuanClient } from "./client.js";
 import type { StandardResult } from "./contracts.js";
-import {
-  ensureMarkdownTags,
-  escapeSqlLiteral,
-  isBlockId,
-  stripLeadingTitleHeading
-} from "./format.js";
+import { escapeSqlLiteral, isBlockId, stripLeadingTitleHeading } from "./format.js";
 import { countDocSize, injectNoteMeta, mergeRefsFromBody, type NoteMeta } from "./meta.js";
 import {
   resolveTitleInNotebook,
@@ -87,9 +82,9 @@ export async function saveNote(
     refs,
     updated: new Date().toISOString()
   });
-  body = ensureMarkdownTags(injected.markdown, injected.meta.tags);
+  // Tags live only in YAML frontmatter; do not write SiYuan document attributes.
 
-  const converted: WikiLinkConvertResult = await wikiLinksToSiyuan(body, (linkTitle) =>
+  const converted: WikiLinkConvertResult = await wikiLinksToSiyuan(injected.markdown, (linkTitle) =>
     resolveTitleInNotebook(client, input.notebookId, linkTitle)
   );
   const size = countDocSize(converted.markdown);
@@ -109,15 +104,6 @@ export async function saveNote(
   }
   if (!id || !isBlockId(id)) {
     throw new Error("save_note failed to obtain document id");
-  }
-
-  if (injected.meta.tags.length > 0) {
-    await client
-      .post("/api/attr/setBlockAttrs", {
-        id,
-        attrs: { tags: injected.meta.tags.map((tag) => tag.replaceAll("#", "")).join(",") }
-      })
-      .catch(() => undefined);
   }
 
   const tooLargeHint = size.tooLarge

@@ -97,12 +97,31 @@ export function stripLeadingTitleHeading(markdown: string, title: string): strin
 
 export function cleanExportedMarkdown(raw: string, title?: string): string {
   let text = raw.replace(/^\uFEFF/, "").replace(/\u200b/g, "");
-  if (text.startsWith("---")) {
+
+  // Strip SiYuan document-attribute YAML only; keep our note meta frontmatter.
+  // Export may prepend `---\ntitle: ...\n---` before our meta block.
+  // Lazy import avoided: duplicate minimal split here to keep format.js free of meta cycles.
+  while (text.startsWith("---")) {
     const end = text.indexOf("\n---", 3);
-    if (end !== -1) {
-      text = text.slice(end + 4).replace(/^\s+/, "");
+    if (end === -1) {
+      break;
     }
+    const afterClose = text.slice(end + 4);
+    if (afterClose.length > 0 && !/^\r?\n|^$/.test(afterClose)) {
+      break;
+    }
+    const frontmatter = text.slice(3, end).replace(/^\r?\n/, "");
+    const isOurs =
+      /(^|\n)\s*(主要内容|summary)\s*:/i.test(frontmatter) ||
+      (/(^|\n)\s*(更新日期|updated)\s*:/i.test(frontmatter) &&
+        /(^|\n)\s*(标签|tags)\s*:/i.test(frontmatter)) ||
+      /(^|\n)\s*(引用文档|refs)\s*:/i.test(frontmatter);
+    if (isOurs) {
+      break;
+    }
+    text = afterClose.replace(/^\s+/, "");
   }
+
   text = text.replace(/^[ \t]*\{:[^}]*\}[ \t]*$/gm, "");
   text = text.replace(/[ \t]\{:[^}]*\}/g, "");
   text = text.replace(/ {2,}$/gm, "");

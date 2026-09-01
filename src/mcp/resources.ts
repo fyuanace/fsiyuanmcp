@@ -13,7 +13,7 @@ export const MCP_INSTRUCTIONS = [
   "无分类：文档扁平保存在可写笔记本根下，用较长 title 概括主题。",
   "写入用 save_note(title, markdown, summary?, tags?, refs?)。同名更新并保留 id；正文用标准 Markdown。仅配置的可写笔记本允许 save/delete。",
   "引用文档写 [[文档标题]]，服务会转成思源双链；读回仍是 [[标题]]。",
-  "文档顶部有元数据：主要内容、更新日期、标签、引用文档；用标签与双链形成图谱。",
+  "文档顶部有 YAML frontmatter 元数据：主要内容、更新日期、标签、引用文档；用标签与双链形成图谱。不写思源文档属性。",
   "浏览用 list_docs；检索用 search_notes（文档名→标题块，命中≤5 附全文）。",
   "read_note 正文末尾自动附附件本地路径；Agent 可直接 Read 这些路径读图片/文件。",
   "删除用 delete_content 或 delete_docs（confirm=true）；文档过大时 tooLarge=true 请另建互链。"

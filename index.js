@@ -24,7 +24,7 @@ const toolCatalog = {
     { name: "get_plugin_version", description: "返回 fsiyuanmcp MCP 插件与服务版本号", group: "系统" },
     {
       name: "save_note",
-      description: "扁平保存笔记：title+markdown。同名更新保留 id；[[标题]] 转双链；仅可写笔记本",
+      description: "扁平保存笔记：title+markdown。同名更新保留 id；YAML frontmatter 元数据；不写文档属性；[[标题]] 转双链；仅可写笔记本",
       group: "记录"
     },
     {
