@@ -1,5 +1,7 @@
 # 思源 HTTP MCP 服务
 
+**仅桌面端**：支持 Windows / macOS / Linux 思源桌面客户端；**不支持**手机、平板等移动端（Android / iOS / Harmony）。MCP 需在本机拉起 Node 服务，供 Cursor 等客户端连接。
+
 扁平长标题笔记 + 标签/双链图谱。写操作限制在一个可写笔记本。
 
 ## 核心能力

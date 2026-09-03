@@ -2,6 +2,7 @@
 
 | 时间 | 说明 |
 |------|------|
+| 2026-09-03 | 限定仅桌面端启用（plugin.json backends/frontends + 运行时检测）；说明写入 README 与设置页 |
 | 2026-09-01 | 移除 HTML 注释元数据兼容；frontmatter 与正文之间固定空一行 |
 | 2026-09-01 | 元数据改为 YAML frontmatter；禁止写入思源文档属性（不再 setBlockAttrs） |
 | 2026-08-19 | read_note 正文末尾附附件本地路径；移除 siyuan://asset Resource 与 HTTP /assets 代理 |

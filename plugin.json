@@ -1,26 +1,34 @@
 {
   "name": "fsiyuanmcp",
   "author": "fyuan",
-  "url": "https://github.com/fyuan/fsiyuanmcp",
-  "version": "0.4.7",
+  "url": "https://github.com/fyuanace/fsiyuanmcp",
+  "version": "0.4.8",
   "minAppVersion": "3.0.0",
-  "backends": ["all"],
-  "frontends": ["all"],
+  "backends": [
+    "windows",
+    "linux",
+    "darwin"
+  ],
+  "frontends": [
+    "desktop",
+    "desktop-window"
+  ],
   "main": "index.js",
   "displayName": {
     "default": "fsiyuanmcp",
     "zh_CN": "思源 MCP 服务"
   },
   "description": {
-    "default": "Run local HTTP MCP service for SiYuan",
-    "zh_CN": "在思源中运行本�?HTTP MCP 服务"
+    "default": "Desktop-only local HTTP MCP for SiYuan (Windows/macOS/Linux). Not for mobile.",
+    "zh_CN": "仅桌面端可用的本地 HTTP MCP 服务（Windows/macOS/Linux）。不支持手机/平板等移动端。"
   },
   "readme": {
     "default": "README.md"
   },
   "keywords": [
     "mcp",
-    "siyuan"
+    "siyuan",
+    "desktop"
   ],
   "disabledInPublish": false
 }

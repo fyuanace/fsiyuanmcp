@@ -73,6 +73,11 @@ export function renderSettingsPage(vm: SettingsViewModel): string {
   return `
 <div class="fn__flex-column" style="gap:12px">
   <section>
+    <p style="margin:0;padding:10px 12px;border-radius:8px;border:1px solid #3573f0;background:rgba(53,115,240,0.12);line-height:1.55">
+      本插件仅支持思源桌面端（Windows / macOS / Linux），不支持手机、平板等移动端。MCP 需在本机拉起 Node 服务供 Cursor 等客户端连接。
+    </p>
+  </section>
+  <section>
     <h2>Agent 可写笔记本</h2>
     <label>可写 notebook</label>
     <select id="writableNotebookId">${notebookOptions}</select>

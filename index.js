@@ -2,7 +2,26 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const { spawn, execSync } = require("child_process");
-const { Plugin, Setting, fetchPost, showMessage } = require("siyuan");
+const { Plugin, Setting, fetchPost, showMessage, getFrontend, getBackend } = require("siyuan");
+
+const DESKTOP_ONLY_HINT =
+  "本插件仅支持思源桌面端（Windows / macOS / Linux），不支持手机、平板等移动端。MCP 需在本机拉起 Node 服务供 Cursor 等客户端连接。";
+
+function isDesktopSupportedEnvironment() {
+  try {
+    const frontend = typeof getFrontend === "function" ? String(getFrontend()) : "desktop";
+    const backend = typeof getBackend === "function" ? String(getBackend()) : "windows";
+    if (frontend.includes("mobile") || frontend === "browser-mobile") {
+      return false;
+    }
+    if (backend === "android" || backend === "ios" || backend === "harmony") {
+      return false;
+    }
+    return true;
+  } catch (_error) {
+    return true;
+  }
+}
 
 // 思源插件 require 不会按插件目录解析相对路径，工具清单与客户端配置必须内联。
 const MCP_SERVER_NAME = "fsiyuanmcp";
@@ -266,12 +285,20 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
     try {
       this.loadStyles();
       this.registerIcons();
+      this.desktopSupported = isDesktopSupportedEnvironment();
       try {
         await this.loadSettings();
       } catch (error) {
         console.error("[fsiyuanmcp] load settings failed", error);
       }
       this.registerSettingsUI();
+      if (!this.desktopSupported) {
+        this.serverStatus = "error";
+        this.lastStatusDetail = "仅桌面端可用";
+        showMessage(DESKTOP_ONLY_HINT);
+        console.warn("[fsiyuanmcp] skipped: not a desktop environment");
+        return;
+      }
       this.refreshMarketplaceIconCache();
       try {
         await this.loadNotebooks();
@@ -292,6 +319,9 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
   }
 
   onLayoutReady() {
+    if (this.desktopSupported === false) {
+      return;
+    }
     this.startRuntime();
     this.refreshMarketplaceIconCache();
   }
@@ -302,6 +332,9 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
   }
 
   startRuntime() {
+    if (this.desktopSupported === false) {
+      return;
+    }
     if (this.runtimeStarted) {
       this.mountTopbar();
       return;
@@ -472,6 +505,13 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
     this.patchSettingOpen();
   }
 
+  buildDesktopOnlyNotice() {
+    const notice = document.createElement("div");
+    notice.className = "fsiyuanmcp-desktop-notice";
+    notice.textContent = DESKTOP_ONLY_HINT;
+    return notice;
+  }
+
   buildSettingsTabs({ notebookSelect, delayInput }) {
     const root = document.createElement("div");
     root.className = "fsiyuanmcp-settings-tabs";
@@ -525,7 +565,7 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
     panels.querySelector('[data-tab="intro"]').appendChild(this.buildIntroTabPanel());
     panels.querySelector('[data-tab="server"]').appendChild(this.buildServerTabPanel());
 
-    root.append(bar, panels);
+    root.append(this.buildDesktopOnlyNotice(), bar, panels);
     activateTab("config");
     return root;
   }
@@ -607,6 +647,7 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
     const intro = document.createElement("div");
     intro.className = "fsiyuanmcp-hint";
     intro.innerHTML =
+      "<strong>仅桌面端</strong>：本插件只用于 Windows / macOS / Linux 思源桌面端，不支持移动端。<br/><br/>" +
       "扁平长标题笔记 + 标签/双链图谱。Agent 用 <code>save_note</code> 写入（仅可写笔记本），" +
       "<code>search_notes</code> / <code>list_docs</code> / <code>read_note</code> 全库只读浏览。" +
       "<code>read_note</code> 正文末尾会附附件本地路径。";
@@ -1323,6 +1364,14 @@ module.exports = class FSiYuanMcpPlugin extends Plugin {
   }
 
   async startServer() {
+    if (this.desktopSupported === false || !isDesktopSupportedEnvironment()) {
+      this.desktopSupported = false;
+      this.serverStatus = "error";
+      this.lastStatusDetail = "仅桌面端可用";
+      this.updateTopbarText();
+      showMessage(DESKTOP_ONLY_HINT);
+      return;
+    }
     if (this.isServerProcessAlive()) {
       this.stopServer();
       await new Promise((resolve) => setTimeout(resolve, 400));

@@ -88,6 +88,16 @@
   height: auto !important;
 }
 
+.fsiyuanmcp-desktop-notice {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--b3-theme-primary, #3573f0);
+  background: var(--b3-theme-primary-lightest, rgba(53, 115, 240, 0.12));
+  color: var(--b3-theme-on-background);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
 .fsiyuanmcp-settings-tabs {
   display: flex;
   flex-direction: column;

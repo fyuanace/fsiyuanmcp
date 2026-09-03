@@ -1,6 +1,6 @@
 {
   "name": "fsiyuanmcp",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "SiYuan HTTP MCP service with notebook write guard",
   "main": "dist/server.js",
   "type": "module",

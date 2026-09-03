@@ -26,6 +26,7 @@ describe("renderSettingsPage", () => {
     });
 
     expect(html).toContain("Agent 可写笔记本");
+    expect(html).toContain("仅支持思源桌面端");
     expect(html).toContain("search_notes");
     expect(html).toContain("siyuan://tags");
     expect(html).toContain("&quot;mcpServers&quot;");
